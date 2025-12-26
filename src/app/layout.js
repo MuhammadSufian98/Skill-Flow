@@ -28,7 +28,7 @@ export default function RootLayout({ children }) {
       >
         <div className="fixed inset-0 -z-10 overflow-hidden">
           <NeuralBackground />
-          <div className="absolute inset-0 backdrop-blur-sm" />
+          <div className="absolute inset-0" />
           <div className="absolute inset-0 bg-linear-to-br from-cyan-400/25 via-purple-600/35 to-pink-500/25 blur-2xl" />
         </div>
 

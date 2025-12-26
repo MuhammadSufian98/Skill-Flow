@@ -13,36 +13,22 @@ export function GeneralProvider({ children }) {
     recentStudy: [],
     availableQuizzes: [],
   });
-  const [sections, setSections] = useState([
-    {
-      id: "s1",
-      topic: "Programming",
-      section: "JavaScript Fundamentals",
-      progress: 68,
-      quizUnlocked: true,
-    },
-    {
-      id: "s2",
-      topic: "Programming",
-      section: "Functions & Scope",
-      progress: 20,
-      quizUnlocked: false,
-    },
-    {
-      id: "s3",
-      topic: "Data Structures & Algorithms",
-      section: "Arrays & Strings",
-      progress: 42,
-      quizUnlocked: true,
-    },
-    {
-      id: "s4",
-      topic: "Data Structures & Algorithms",
-      section: "Sorting Basics",
-      progress: 12,
-      quizUnlocked: false,
-    },
-  ]);
+
+  // {
+  //   id: "s1",
+  //   topic: "Programming",
+  //   section: "JavaScript Fundamentals",
+  // },
+  const [sections, setSections] = useState([]);
+  const [material, setMaterial] = useState([]);
+  const [progressMap, setProgressMap] = useState({});
+
+  const [quiz, setQuiz] = useState([]);
+
+  // Function to clear quiz
+  const clearQuiz = () => {
+    setQuiz([]); // Reset quiz data to empty array
+  };
 
   const [scores, setScores] = useState([
     {
@@ -70,23 +56,32 @@ export function GeneralProvider({ children }) {
       date: "2 days ago",
     },
   ]);
-  const [notes, setNotes] = useState([]);
+
+  const [notes, setNotes] = useState([
+    {
+      id: "n1",
+      text: "Cells have membrane, cytoplasm, nucleus (eukaryotes).",
+      createdAt: new Date().toISOString(),
+    },
+    {
+      id: "n2",
+      text: "Algebra tip: isolate variable with inverse operations.",
+      createdAt: new Date(Date.now() - 3600_000).toISOString(),
+    },
+  ]);
 
   const addNote = (text) => {
     const trimmed = (text || "").trim();
     if (!trimmed) return;
 
-    setNotes((u) => ({
-      ...u,
-      notes: [
-        {
-          id: crypto.randomUUID(),
-          text: trimmed,
-          createdAt: new Date().toISOString(),
-        },
-        ...u.notes,
-      ],
-    }));
+    setNotes((prevNotes) => [
+      {
+        id: crypto.randomUUID(), // Generate a unique ID
+        text: trimmed,
+        createdAt: new Date().toISOString(), // Timestamp
+      },
+      ...prevNotes, // Add new note to the front of the array
+    ]);
   };
 
   const value = useMemo(
@@ -102,6 +97,13 @@ export function GeneralProvider({ children }) {
       addNote,
       notes,
       setNotes,
+      material,
+      setMaterial,
+      progressMap,
+      setProgressMap,
+      quiz,
+      setQuiz,
+      clearQuiz,
     }),
     [active]
   );

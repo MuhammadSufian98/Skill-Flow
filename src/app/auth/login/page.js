@@ -26,7 +26,7 @@ export default function Login() {
   return (
     <AuthTransition>
       <div className="relative flex min-h-[420px] w-full overflow-hidden rounded-2xl border border-white/10 bg-white/5 backdrop-blur-xl shadow-2xl">
-        <div className="relative hidden w-1/2 flex-col justify-center overflow-hidden p-12 md:flex">
+        <div className="relative hidden w-1/2 flex-col justify-center overflow-hidden p-12 md:flex back">
           <div
             className="absolute inset-0 bg-linear-to-br from-cyan-400/75 via-purple-500/45 to-pink-500/75 opacity-95"
             style={{ clipPath: "polygon(0 0, 100% 0, 90% 100%, 0 100%)" }}
