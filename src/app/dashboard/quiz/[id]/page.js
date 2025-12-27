@@ -6,12 +6,13 @@ import { useGeneral } from "@/context/generalContext";
 
 export default function QuizPage() {
   const router = useRouter();
-  const { id } = useParams(); // Use useParams to get the dynamic id from the URL
+  const { id } = useParams();
   const { quiz, setQuiz, clearQuiz } = useGeneral();
   const [answers, setAnswers] = useState(new Array(0).fill(null));
   const [submitted, setSubmitted] = useState(false);
   const [score, setScore] = useState(0);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
   useEffect(() => {
     const fetchQuizData = async () => {
@@ -28,18 +29,19 @@ export default function QuizPage() {
         });
 
         const data = await response.json();
-        console.log("Quiz Data:", data); // Debugging the response
+        console.log("Quiz Data:", data);
 
         if (data.ok && data.quiz) {
-          setQuiz(data.quiz); // Set the quiz data to context
+          setQuiz(data.quiz);
         } else {
-          console.error("Failed to fetch quiz data:", data.error);
+          throw new Error(data.error || "Failed to fetch quiz data");
         }
       } catch (err) {
+        setError(err.message);
         console.error("Error fetching quiz:", err);
       }
 
-      setLoading(false); // Set loading to false once the data is fetched
+      setLoading(false);
     };
 
     fetchQuizData();
@@ -72,10 +74,25 @@ export default function QuizPage() {
     return (
       <div className="flex justify-center items-center min-h-screen bg-black/80">
         <div className="animate-pulse space-y-4 text-white">
-          <div className="h-8 w-3/4 bg-gradient-to-r from-cyan-400 via-purple-600 to-pink-500 rounded-md"></div>
-          <div className="h-6 w-1/2 bg-gradient-to-r from-cyan-400 via-purple-600 to-pink-500 rounded-md"></div>
-          <div className="h-4 w-full bg-gradient-to-r from-cyan-400 via-purple-600 to-pink-500 rounded-md"></div>
+          <div className="h-8 w-3/4 bg-linear-to-r from-cyan-400 via-purple-600 to-pink-500 rounded-md"></div>
+          <div className="h-6 w-1/2 bg-linear-to-r from-cyan-400 via-purple-600 to-pink-500 rounded-md"></div>
+          <div className="h-4 w-full bg-linear-to-r from-cyan-400 via-purple-600 to-pink-500 rounded-md"></div>
         </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="text-center text-white space-y-4">
+        <h2 className="text-2xl font-semibold">Error Fetching Quiz</h2>
+        <p className="text-sm">{error}</p>
+        <button
+          onClick={handleBackToHome}
+          className="mt-4 px-6 py-3 bg-linear-to-r from-red-500 to-yellow-500 text-white rounded-lg shadow-lg hover:bg-linear-to-r hover:from-yellow-500 hover:to-red-400 transition ease-in-out"
+        >
+          Back to Home
+        </button>
       </div>
     );
   }
@@ -84,6 +101,12 @@ export default function QuizPage() {
     return (
       <div className="text-center text-white">
         <h2 className="text-xl font-semibold">No quiz data available.</h2>
+        <button
+          onClick={handleBackToHome}
+          className="mt-4 px-6 py-3 bg-linear-to-r from-cyan-400 to-teal-500 text-white rounded-lg shadow-lg hover:bg-linear-to-r hover:from-teal-500 hover:to-cyan-500 transition ease-in-out"
+        >
+          Back to Home
+        </button>
       </div>
     );
   }
@@ -129,7 +152,7 @@ export default function QuizPage() {
                         onChange={() => handleAnswerChange(index, option)}
                         className="hidden accent-cyan-400"
                       />
-                      <div className="flex items-center justify-center p-2 bg-black/40 border border-white/10 rounded-lg">
+                      <div className="flex items-center justify-center p-2 bg-black/40 border border-white/10 rounded-lg transform transition-transform hover:scale-105">
                         {option}
                       </div>
                     </label>
@@ -140,7 +163,7 @@ export default function QuizPage() {
             <div className="flex justify-end mt-6">
               <button
                 onClick={handleSubmit}
-                className="px-6 py-3 bg-gradient-to-r from-cyan-400 to-purple-600 text-white rounded-lg shadow-lg hover:bg-gradient-to-r hover:from-purple-600 hover:to-pink-500 transition ease-in-out"
+                className="px-6 py-3 bg-linear-to-r from-cyan-400 to-purple-600 text-white rounded-lg shadow-lg hover:bg-linear-to-r hover:from-purple-600 hover:to-pink-500 transition ease-in-out"
               >
                 Submit
               </button>
@@ -153,7 +176,7 @@ export default function QuizPage() {
             </h2>
             <button
               onClick={handleBackToHome}
-              className="mt-4 px-6 py-3 bg-gradient-to-r from-green-400 to-teal-500 text-white rounded-lg shadow-lg hover:bg-gradient-to-r hover:from-teal-500 hover:to-green-500 transition ease-in-out"
+              className="mt-4 px-6 py-3 bg-linear-to-r from-green-400 to-teal-500 text-white rounded-lg shadow-lg hover:bg-linear-to-r hover:from-teal-500 hover:to-green-500 transition ease-in-out"
             >
               Back to Home
             </button>

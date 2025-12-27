@@ -24,8 +24,9 @@ export default function StudySection() {
     }
   };
 
+  // Fetch notes once on mount
   useEffect(() => {
-    loadNotes(); // Call renamed function here
+    loadNotes(); // Call renamed function here only once
   }, []);
 
   const handleAddNote = async (note, setNotes, setNote) => {
@@ -34,32 +35,43 @@ export default function StudySection() {
 
     setNote(""); // Clear the input field
 
-    // Save the new note to the backend
-    const savedNote = await saveNotes([{ text: trimmed }]);
+    try {
+      // Save the new note to the backend
+      const savedNote = await saveNotes([{ text: trimmed }]);
 
-    if (savedNote) {
-      // Update the local state with the newly saved note
-      setNotes((prevNotes) => [
-        ...prevNotes,
-        { ...savedNote, id: Date.now(), createdAt: new Date() },
-      ]);
+      if (savedNote) {
+        // Update the local state with the newly saved note
+        setNotes((prevNotes) => [
+          ...prevNotes,
+          { ...savedNote, id: Date.now(), createdAt: new Date() },
+        ]);
+      }
+    } catch (err) {
+      console.error("Error saving note:", err);
     }
   };
 
   const fetchMaterialData = async (id) => {
-    const material = await fetchMaterial(id);
-    if (!material?._id) return;
-    setMaterial((prev) => {
-      const list = Array.isArray(prev) ? prev : [];
-      if (list.some((m) => m._id === material._id)) return list;
-      return [...list, material];
-    });
-    router.push(`/dashboard/study/${id}`);
+    try {
+      const material = await fetchMaterial(id);
+      if (!material?._id) return;
+
+      // Check if the material already exists in the state
+      setMaterial((prev) => {
+        const list = Array.isArray(prev) ? prev : [];
+        if (list.some((m) => m._id === material._id)) return list; // Avoid duplicate material
+        return [...list, material];
+      });
+
+      router.push(`/dashboard/study/${id}`);
+    } catch (err) {
+      console.error("Error fetching material:", err);
+    }
   };
 
   const getProgress = (id) => {
-    const p = progressMap?.[String(id)]?.progress;
-    return Number.isFinite(p) ? Math.max(0, Math.min(100, p)) : 0;
+    const progress = progressMap?.[String(id)]?.progress;
+    return Number.isFinite(progress) ? Math.max(0, Math.min(100, progress)) : 0;
   };
 
   return (

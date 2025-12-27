@@ -1,11 +1,18 @@
 "use client";
 
-import React, { createContext, useContext, useMemo, useState } from "react";
+import React, {
+  createContext,
+  useContext,
+  useMemo,
+  useState,
+  useCallback,
+} from "react";
 
 const GeneralContext = createContext(null);
 
 export function GeneralProvider({ children }) {
   const [active, setActive] = useState("home");
+
   const [homeSection, setHomeSection] = useState({
     streak: 0,
     unlockedQuizzes: 0,
@@ -14,16 +21,11 @@ export function GeneralProvider({ children }) {
     availableQuizzes: [],
   });
 
-  // {
-  //   id: "s1",
-  //   topic: "Programming",
-  //   section: "JavaScript Fundamentals",
-  // },
-  const [sections, setSections] = useState([]);
-  const [material, setMaterial] = useState([]);
-  const [progressMap, setProgressMap] = useState({});
+  const [sections, setSections] = useState([]); // Stores all the sections
+  const [material, setMaterial] = useState([]); // Stores material data (can be updated separately)
+  const [progressMap, setProgressMap] = useState({}); // Stores progress for sections
 
-  const [quiz, setQuiz] = useState([]);
+  const [quiz, setQuiz] = useState([]); // Stores quiz data
 
   // Function to clear quiz
   const clearQuiz = () => {
@@ -84,6 +86,31 @@ export function GeneralProvider({ children }) {
     ]);
   };
 
+  // Efficiently update sections: either replace all sections or update individual ones
+  const updateSections = useCallback((newSections) => {
+    setSections((prevSections) => {
+      // Only update if the newSections differ from the current ones
+      if (JSON.stringify(prevSections) !== JSON.stringify(newSections)) {
+        return newSections;
+      }
+      return prevSections;
+    });
+  }, []);
+
+  // Force reload of sections (e.g., when needed to fetch fresh data)
+  const reloadSections = useCallback(() => {
+    setSections([]); // Clear the existing sections and trigger a reload
+  }, []);
+
+  // Update the progress for a specific section
+  const updateSectionProgress = useCallback((sectionId, newProgress) => {
+    setProgressMap((prevProgressMap) => {
+      const updatedProgressMap = { ...prevProgressMap };
+      updatedProgressMap[sectionId] = newProgress;
+      return updatedProgressMap;
+    });
+  }, []);
+
   const value = useMemo(
     () => ({
       active,
@@ -92,20 +119,23 @@ export function GeneralProvider({ children }) {
       setHomeSection,
       sections,
       setSections,
+      updateSections, // Expose updateSections for efficient section updates
+      reloadSections, // Expose reloadSections for refreshing the sections
+      material,
+      setMaterial,
+      progressMap,
+      setProgressMap,
+      updateSectionProgress, // Expose updateSectionProgress for handling progress changes
+      quiz,
+      setQuiz,
+      clearQuiz,
       scores,
       setScores,
       addNote,
       notes,
       setNotes,
-      material,
-      setMaterial,
-      progressMap,
-      setProgressMap,
-      quiz,
-      setQuiz,
-      clearQuiz,
     }),
-    [active]
+    [active, homeSection, sections, progressMap, quiz, scores, notes]
   );
 
   return (

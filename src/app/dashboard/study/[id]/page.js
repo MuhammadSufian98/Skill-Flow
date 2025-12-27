@@ -89,7 +89,7 @@ function clampInt(n, min, max) {
 export default function StudyMaterialPage() {
   const { id } = useParams();
   const router = useRouter();
-  const { material, setMaterial } = useGeneral();
+  const { material, setMaterial, sections, setSections } = useGeneral();
 
   const [state, setState] = useState({ loading: true, error: "" });
   const [materialItem, setMaterialItem] = useState(null);
@@ -104,6 +104,7 @@ export default function StudyMaterialPage() {
 
   const startTsRef = useRef(Date.now());
   const lastFlushTsRef = useRef(0);
+  const saveProgressIntervalRef = useRef(null);
 
   const data = useMemo(() => {
     if (materialItem?._id) return materialItem;
@@ -170,13 +171,14 @@ export default function StudyMaterialPage() {
 
   const flushProgress = async () => {
     const now = Date.now();
-    if (now - lastFlushTsRef.current < 400) return;
+    if (now - lastFlushTsRef.current < 400) return; // Throttling
     lastFlushTsRef.current = now;
 
     const payload = readLocalProgress();
     if (!payload?.materialId) return;
 
     try {
+      // Save progress to backend
       await saveProgress({
         materialId: payload.materialId,
         progress: payload.progress,
@@ -184,7 +186,57 @@ export default function StudyMaterialPage() {
         timeSpentSec: payload.timeSpentSec,
         updatedAt: payload.updatedAt,
       });
-    } catch {}
+
+      // Now, update the progress in the sections
+      const updatedSections = sections.map((topic) => ({
+        ...topic,
+        sections: (Array.isArray(topic.sections) ? topic.sections : []).map(
+          (section) => {
+            if (section._id === payload.materialId) {
+              return {
+                ...section,
+                progress: payload.progress,
+              };
+            }
+            return section;
+          }
+        ),
+      }));
+
+      // Update the state with the new sections
+      setSections(updatedSections);
+    } catch (error) {
+      console.error("Error while flushing progress:", error);
+    }
+  };
+
+  const startAutoSaveProgress = () => {
+    if (saveProgressIntervalRef.current) return; // Prevent multiple intervals from being set
+
+    saveProgressIntervalRef.current = setInterval(() => {
+      const pct = computeProgress();
+      const now = Date.now();
+      const elapsedSec = Math.floor((now - startTsRef.current) / 1000);
+
+      writeLocalProgress({
+        materialId: String(id),
+        progress: pct,
+        timeSpentSec: Math.max(
+          progressRef.current.timeSpentSec || 0,
+          elapsedSec
+        ),
+        updatedAt: now,
+      });
+
+      flushProgress();
+    }, 5000); // Save progress every 5 seconds
+  };
+
+  const stopAutoSaveProgress = () => {
+    if (saveProgressIntervalRef.current) {
+      clearInterval(saveProgressIntervalRef.current);
+      saveProgressIntervalRef.current = null;
+    }
   };
 
   useEffect(() => {
@@ -288,8 +340,11 @@ export default function StudyMaterialPage() {
     window.addEventListener("scroll", onScroll, { passive: true });
     onScroll();
 
+    startAutoSaveProgress();
+
     return () => {
       window.removeEventListener("scroll", onScroll);
+      stopAutoSaveProgress();
     };
   }, [id, progressKey]);
 

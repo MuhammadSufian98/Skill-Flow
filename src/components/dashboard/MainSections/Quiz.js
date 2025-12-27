@@ -1,6 +1,7 @@
 import SectionShell from "@/components/dashboard/sectionShell";
 import { useGeneral } from "@/context/generalContext";
 import { useRouter } from "next/navigation";
+import "../../../app/globals.css";
 
 export default function QuizSection() {
   const { sections, setQuiz } = useGeneral();
@@ -28,7 +29,7 @@ export default function QuizSection() {
       title="Quiz"
       subtitle="Quizzes unlock as you complete study sections"
     >
-      <div className="space-y-3">
+      <div className="space-y-3 custom-scrollbar">
         {unlockedSections.length > 0 ? (
           unlockedSections.map((t, ti) => (
             <div
@@ -80,7 +81,6 @@ export default function QuizSection() {
                       </div>
 
                       <div className="mt-2 flex items-center justify-between text-xs text-white/70">
-                        <div>Order: {s.order ?? 0}</div>
                         <div>
                           Quiz unlock at: {s?.quiz?.unlockAtProgress ?? 0}%
                         </div>

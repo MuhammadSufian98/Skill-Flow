@@ -27,7 +27,7 @@ body {
 
 /* Custom Scrollbars */
 .custom-scrollbar::-webkit-scrollbar {
-  width: 8px; /* Adjust width as needed */
+  width: 8px !important;
 }
 
 .custom-scrollbar::-webkit-scrollbar-track {
@@ -35,11 +35,10 @@ body {
 }
 
 .custom-scrollbar::-webkit-scrollbar-thumb {
-  background-color: rgba(0, 0, 0, 0.30); /* Black/65 color */
-  border-radius: 10px; /* Optional: Add rounded corners to thumb */
-  border: 2px solid transparent; /* Optional: Optional border to make the thumb stand out */
+  background-color: rgba(0, 0, 0, 0.3) !important;
+  border-radius: 10px !important;
 }
 
 .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-  background-color: rgba(0, 0, 0, 0.85); /* Slightly darker when hovered */
+  background-color: rgba(0, 0, 0, 0.85) !important;
 }
