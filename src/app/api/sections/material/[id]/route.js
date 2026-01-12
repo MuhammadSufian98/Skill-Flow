@@ -3,7 +3,7 @@ import clientPromise from "@/lib/mongodb";
 
 export async function GET(req, ctx) {
   try {
-    const paramId = ctx?.params?.id;
+    const paramId = await ctx?.params?.id;
     const pathId = req.nextUrl?.pathname?.split("/").filter(Boolean).pop();
     const id = paramId || pathId;
 

@@ -6,6 +6,7 @@ import React, {
   useMemo,
   useState,
   useCallback,
+  useEffect,
 } from "react";
 
 const GeneralContext = createContext(null);
@@ -22,6 +23,7 @@ export function GeneralProvider({ children }) {
   });
 
   const [sections, setSections] = useState([]); // Stores all the sections
+  const [isSectionsLoaded, setIsSectionsLoaded] = useState(false); // Track if sections are loaded
   const [material, setMaterial] = useState([]); // Stores material data (can be updated separately)
   const [progressMap, setProgressMap] = useState({}); // Stores progress for sections
 
@@ -86,10 +88,8 @@ export function GeneralProvider({ children }) {
     ]);
   };
 
-  // Efficiently update sections: either replace all sections or update individual ones
   const updateSections = useCallback((newSections) => {
     setSections((prevSections) => {
-      // Only update if the newSections differ from the current ones
       if (JSON.stringify(prevSections) !== JSON.stringify(newSections)) {
         return newSections;
       }
@@ -97,12 +97,11 @@ export function GeneralProvider({ children }) {
     });
   }, []);
 
-  // Force reload of sections (e.g., when needed to fetch fresh data)
   const reloadSections = useCallback(() => {
     setSections([]); // Clear the existing sections and trigger a reload
+    setIsSectionsLoaded(false); // Reset the section load status
   }, []);
 
-  // Update the progress for a specific section
   const updateSectionProgress = useCallback((sectionId, newProgress) => {
     setProgressMap((prevProgressMap) => {
       const updatedProgressMap = { ...prevProgressMap };
@@ -110,6 +109,20 @@ export function GeneralProvider({ children }) {
       return updatedProgressMap;
     });
   }, []);
+
+  // // Fetch sections only when needed
+  // const fetchSectionsIfNeeded = async () => {
+  //   if (!isSectionsLoaded) {
+  //     const response = await fetch("/api/sections");
+  //     const data = await response.json();
+  //     setSections(data);
+  //     setIsSectionsLoaded(true);
+  //   }
+  // };
+
+  // useEffect(() => {
+  //   fetchSectionsIfNeeded(); // Call on mount to fetch sections if not already loaded
+  // }, [isSectionsLoaded]);
 
   const value = useMemo(
     () => ({
@@ -119,13 +132,13 @@ export function GeneralProvider({ children }) {
       setHomeSection,
       sections,
       setSections,
-      updateSections, // Expose updateSections for efficient section updates
-      reloadSections, // Expose reloadSections for refreshing the sections
+      updateSections,
+      reloadSections,
       material,
       setMaterial,
       progressMap,
       setProgressMap,
-      updateSectionProgress, // Expose updateSectionProgress for handling progress changes
+      updateSectionProgress,
       quiz,
       setQuiz,
       clearQuiz,
@@ -134,8 +147,18 @@ export function GeneralProvider({ children }) {
       addNote,
       notes,
       setNotes,
+      // fetchSectionsIfNeeded, // Expose fetchSectionsIfNeeded
     }),
-    [active, homeSection, sections, progressMap, quiz, scores, notes]
+    [
+      active,
+      homeSection,
+      sections,
+      progressMap,
+      quiz,
+      scores,
+      notes,
+      isSectionsLoaded,
+    ]
   );
 
   return (

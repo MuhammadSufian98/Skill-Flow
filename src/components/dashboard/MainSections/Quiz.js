@@ -1,23 +1,30 @@
+import { useState, useEffect } from "react";
 import SectionShell from "@/components/dashboard/sectionShell";
 import { useGeneral } from "@/context/generalContext";
 import { useRouter } from "next/navigation";
 import "../../../app/globals.css";
 
 export default function QuizSection() {
-  const { sections, setQuiz } = useGeneral();
+  const { sections } = useGeneral();
+  const [unlockedSections, setUnlockedSections] = useState([]);
   const router = useRouter();
 
-  // Filter out sections that have quizzes unlocked
-  const unlockedSections = sections
-    .map((topic) => ({
-      ...topic,
-      sections: topic.sections.filter((section) => {
-        const progress = section.progress?.progress || 0;
-        const unlockAtProgress = section.quiz?.unlockAtProgress || 0;
-        return progress >= unlockAtProgress;
-      }),
-    }))
-    .filter((topic) => topic.sections.length > 0);
+  useEffect(() => {
+    if (sections?.length) {
+      const updatedSections = sections
+        .map((topic) => ({
+          ...topic,
+          sections: topic.sections.filter((section) => {
+            const progress = section.progress?.progress || 0;
+            const unlockAtProgress = section.quiz?.unlockAtProgress || 0;
+            return progress >= unlockAtProgress;
+          }),
+        }))
+        .filter((topic) => topic.sections.length > 0);
+
+      setUnlockedSections(updatedSections);
+    }
+  }, [sections]);
 
   // Function to handle quiz start
   const handleStartQuiz = (id, title, topic) => {

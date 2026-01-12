@@ -9,10 +9,29 @@ export const login = async (email, password) => {
   }
 };
 
-export const signup = async (email, password, name, role) => {
+export const signup = async (email, name) => {
   try {
     const response = await api.post("/auth/signup", {
       email,
+      name,
+    });
+    return response.data;
+  } catch (error) {
+    throw error;
+  }
+};
+
+export const verifyEmail = async (
+  email,
+  verificationCode,
+  password,
+  name,
+  role
+) => {
+  try {
+    const response = await api.post("/auth/verify", {
+      email,
+      verificationCode,
       password,
       name,
       role,

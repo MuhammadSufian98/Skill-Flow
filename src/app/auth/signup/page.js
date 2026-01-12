@@ -3,13 +3,24 @@
 import React, { useState } from "react";
 import AuthTransition from "../authTransition";
 import Link from "next/link";
-import { signup } from "@/utils/authApi";
+import { signup, verifyEmail } from "@/utils/authApi";
 import { EyeClosed, Eye } from "lucide-react";
+
+const WarningDialog = ({ message }) => (
+  <div className="absolute top-1/2 right-12 transform -translate-y-1/2 bg-white p-2 rounded-lg shadow-lg text-xs text-gray-700 border border-red-500">
+    {message}
+  </div>
+);
 
 export default function SignUp() {
   const [creds, setCreds] = useState({ name: "", email: "", password: "" });
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [emailError, setEmailError] = useState(false);
+  const [showTooltip, setShowTooltip] = useState(false);
+  const [verificationStep, setVerificationStep] = useState(false);
+  const [verificationCode, setVerificationCode] = useState(Array(6).fill(""));
+  const [verifyLoading, setVerifyLoading] = useState(false);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -22,92 +33,215 @@ export default function SignUp() {
       return;
     }
 
+    const emailRegex =
+      /^[a-zA-Z0-9._%+-]+@(gmail\.com|yahoo\.com|hotmail\.com)$/;
+    if (!emailRegex.test(creds.email)) {
+      setEmailError(true);
+      return;
+    }
+
     setLoading(true);
     try {
-      const res = await signup(email, creds.password, name);
+      const res = await signup(email, creds.name); // Send only the email to the backend to trigger the verification
       console.log(res);
-      localStorage.setItem("access_token", res.token);
-
-      window.location.href = "/dashboard";
+      setVerificationStep(true); // Switch to the verification step
+    } catch (error) {
+      alert(error.message);
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleVerifySubmit = async (e) => {
+    e.preventDefault();
+
+    const code = parseInt(verificationCode.join(""), 10); // Convert to integer
+
+    if (isNaN(code) || code.toString().length !== 6) {
+      alert("Please enter a valid 6-digit verification code.");
+      return;
+    }
+
+    setVerifyLoading(true);
+    try {
+      const res = await verifyEmail(
+        creds.email,
+        code,
+        creds.password,
+        creds.name,
+        "user"
+      );
+      console.log(res);
+      localStorage.setItem("access_token", res.token);
+      window.location.href = "/dashboard";
+    } catch (error) {
+      alert(error.message);
+    } finally {
+      setVerifyLoading(false);
+    }
+  };
+
+  const handleInputChange = (e, index) => {
+    const newCode = [...verificationCode];
+    newCode[index] = e.target.value;
+
+    if (e.target.value && index < 5) {
+      // Move to next input if the user types a digit
+      document.getElementById(`verification-input-${index + 1}`).focus();
+    }
+
+    setVerificationCode(newCode);
+  };
+
+  const handleMouseEnter = () => {
+    setShowTooltip(true);
+  };
+
+  const handleMouseLeave = () => {
+    setShowTooltip(false);
   };
 
   return (
     <AuthTransition>
       <div className="relative flex min-h-[420px] w-full overflow-hidden rounded-2xl border border-white/10 bg-white/5 backdrop-blur-xl shadow-2xl">
         <div className="flex w-full flex-col justify-center p-10 text-white md:w-1/2">
-          <h2 className="mb-8 text-2xl font-semibold">Sign Up</h2>
+          {verificationStep ? (
+            <>
+              <h2 className="mb-8 text-2xl font-semibold">Verify Email</h2>
+              <p className="text-white/70 leading-relaxed mb-8">
+                A verification code has been sent to your email. Please enter
+                the code below to verify your email address.
+              </p>
+              <form onSubmit={handleVerifySubmit} className="space-y-5">
+                <div className="flex gap-2">
+                  {verificationCode.map((digit, index) => (
+                    <input
+                      key={index}
+                      id={`verification-input-${index}`}
+                      type="text"
+                      maxLength="1"
+                      value={digit}
+                      onChange={(e) => handleInputChange(e, index)}
+                      className="w-12 h-12 rounded-lg bg-white/10 px-4 py-3.5 text-sm text-center outline-none placeholder:text-white/40 focus:ring-2 focus:ring-cyan-400"
+                    />
+                  ))}
+                </div>
 
-          <form onSubmit={handleSubmit} className="space-y-5">
-            <input
-              type="text"
-              placeholder="Name"
-              value={creds.name}
-              onChange={(e) => setCreds({ ...creds, name: e.target.value })}
-              autoComplete="name"
-              className="w-full rounded-lg bg-white/10 px-4 py-3.5 text-sm outline-none placeholder:text-white/40 focus:ring-2 focus:ring-cyan-400"
-            />
+                <button
+                  type="submit"
+                  disabled={verifyLoading}
+                  className={[
+                    "mt-6 w-full rounded-lg",
+                    "bg-linear-to-r from-cyan-400 to-purple-500",
+                    "bg-size-[200%_200%] bg-left",
+                    "px-6 py-3.5 text-sm font-semibold text-white",
+                    "transition-all duration-500 ease-out",
+                    "hover:bg-right",
+                    verifyLoading
+                      ? "opacity-70 cursor-not-allowed"
+                      : "cursor-pointer",
+                    "drop-shadow-lg",
+                  ].join(" ")}
+                >
+                  {verifyLoading ? "Verifying..." : "Verify Now"}
+                </button>
+              </form>
+            </>
+          ) : (
+            <>
+              <h2 className="mb-8 text-2xl font-semibold">Sign Up</h2>
 
-            <input
-              type="email"
-              placeholder="Email"
-              value={creds.email}
-              onChange={(e) => setCreds({ ...creds, email: e.target.value })}
-              autoComplete="email"
-              className="w-full rounded-lg bg-white/10 px-4 py-3.5 text-sm outline-none placeholder:text-white/40 focus:ring-2 focus:ring-cyan-400"
-            />
+              <form onSubmit={handleSubmit} className="space-y-5">
+                <input
+                  type="text"
+                  placeholder="Name"
+                  value={creds.name}
+                  onChange={(e) => setCreds({ ...creds, name: e.target.value })}
+                  autoComplete="name"
+                  className="w-full rounded-lg bg-white/10 px-4 py-3.5 text-sm outline-none placeholder:text-white/40 focus:ring-2 focus:ring-cyan-400"
+                />
 
-            <div className="relative">
-              <input
-                type={showPassword ? "text" : "password"}
-                placeholder="Password"
-                value={creds.password}
-                onChange={(e) =>
-                  setCreds({ ...creds, password: e.target.value })
-                }
-                autoComplete="new-password"
-                className="w-full rounded-lg bg-white/10 px-4 py-3.5 pr-12 text-sm outline-none placeholder:text-white/40 focus:ring-2 focus:ring-cyan-400"
-              />
+                <div className="relative">
+                  <input
+                    type="email"
+                    placeholder="Email"
+                    value={creds.email}
+                    onChange={(e) =>
+                      setCreds({ ...creds, email: e.target.value })
+                    }
+                    autoComplete="email"
+                    className="w-full rounded-lg bg-white/10 px-4 py-3.5 text-sm outline-none placeholder:text-white/40 focus:ring-2 focus:ring-cyan-400"
+                  />
+                  {emailError && (
+                    <div
+                      className="w-5 h-5 rounded-full bg-red-500 text-white text-xs flex items-center justify-center cursor-pointer absolute top-1/2 right-4 transform -translate-y-1/2"
+                      onMouseEnter={handleMouseEnter}
+                      onMouseLeave={handleMouseLeave}
+                    >
+                      i
+                    </div>
+                  )}
+                  {showTooltip && emailError && (
+                    <WarningDialog message="Email not valid" />
+                  )}
+                </div>
 
-              <button
-                type="button"
-                onClick={() => setShowPassword((v) => !v)}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-white/60 hover:text-white"
-              >
-                {showPassword ? (
-                  <EyeClosed className="h-5 w-5" />
-                ) : (
-                  <Eye className="h-5 w-5" />
-                )}
-              </button>
-            </div>
+                <div className="relative">
+                  <input
+                    type={showPassword ? "text" : "password"}
+                    placeholder="Password"
+                    value={creds.password}
+                    onChange={(e) =>
+                      setCreds({ ...creds, password: e.target.value })
+                    }
+                    autoComplete="new-password"
+                    className="w-full rounded-lg bg-white/10 px-4 py-3.5 pr-12 text-sm outline-none placeholder:text-white/40 focus:ring-2 focus:ring-cyan-400"
+                  />
 
-            <button
-              type="submit"
-              disabled={loading}
-              className={[
-                "mt-6 w-full rounded-lg",
-                "bg-linear-to-r from-cyan-400 to-purple-500",
-                "bg-size-[200%_200%] bg-left",
-                "px-6 py-3.5 text-sm font-semibold text-white",
-                "transition-all duration-500 ease-out",
-                "hover:bg-right",
-                loading ? "opacity-70 cursor-not-allowed" : "cursor-pointer",
-                "drop-shadow-lg",
-              ].join(" ")}
-            >
-              {loading ? "Creating..." : "Create Account"}
-            </button>
-          </form>
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword((v) => !v)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-white/60 hover:text-white"
+                  >
+                    {showPassword ? (
+                      <EyeClosed className="h-5 w-5" />
+                    ) : (
+                      <Eye className="h-5 w-5" />
+                    )}
+                  </button>
+                </div>
 
-          <p className="mt-6 text-center text-xs text-white/50">
-            Already have an account?{" "}
-            <Link className="cursor-pointer text-cyan-400" href="/auth/login">
-              Log in
-            </Link>
-          </p>
+                <button
+                  type="submit"
+                  disabled={loading}
+                  className={[
+                    "mt-6 w-full rounded-lg",
+                    "bg-linear-to-r from-cyan-400 to-purple-500",
+                    "bg-size-[200%_200%] bg-left",
+                    "px-6 py-3.5 text-sm font-semibold text-white",
+                    "transition-all duration-500 ease-out",
+                    "hover:bg-right",
+                    loading
+                      ? "opacity-70 cursor-not-allowed"
+                      : "cursor-pointer",
+                    "drop-shadow-lg",
+                  ].join(" ")}
+                >
+                  {loading ? "Creating..." : "Create Account"}
+                </button>
+              </form>
+
+              <p className="mt-6 text-center text-xs text-white/50">
+                Already have an account?{" "}
+                <Link
+                  className="cursor-pointer text-cyan-400"
+                  href="/auth/login"
+                >
+                  Log in
+                </Link>
+              </p>
+            </>
+          )}
         </div>
 
         <div className="relative hidden w-1/2 flex-col justify-center overflow-hidden p-12 md:flex">
